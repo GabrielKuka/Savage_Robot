@@ -1,9 +1,9 @@
 /*
- *This template was provided by Nathan Beeten on October 28, 2016
- *It has been modified by Gabriel Kuka on 11, 2016
- *Actual version of the code is 2.0 Alpha!
- *This code was created and modified in order to control a savage soccer robot.
- */
+  This template was provided by Nathan Beeten on October 28, 2016
+  It has been modified by Gabriel Kuka on 11, 2016
+  Actual version of the code is 2.0 Alpha!
+  This code was created and modified in order to control a savage soccer robot.
+*/
 
 #include <Arduino.h>
 #include <XBOXRECV.h> //import the wireless coms library
@@ -99,6 +99,16 @@ void loop() {// The loop runs repeatedly from top to bottom after the setup
         checkMovement(3);
       } else if (hatYInput < -7500) { // <- If joystick moves down
         checkMovement(4);
+      } else if (rightBumper_R1) {
+        Serial.println("R1 pressed!");
+      } else if (leftBumper_L1) {
+        Serial.println("L1 pressed!");
+      }
+      else if (rightTrigger_R2) {
+        Serial.println("R2 pressed!");
+      }
+      else if (leftTrigger_L2) {
+        Serial.println("L2 pressed!");
       } else if (hatXInput <= 7500 && hatXInput >= -7500 && hatYInput <= 7500 && hatYInput >= -7500) {
         checkMovement(5);
       }
@@ -116,20 +126,7 @@ void loop() {// The loop runs repeatedly from top to bottom after the setup
         Serial.println("Button Y pressed");
       }
 
-      if (rightBumper_R1) {
-        Serial.println("R1 pressed!");
-      }
-      if (leftBumper_L1) {
-        Serial.println("L1 pressed!");
-      }
 
-      if (rightTrigger_R2) {
-        Serial.println("R2 pressed!");
-      }
-
-      if (leftTrigger_L2) {
-        Serial.println("L2 pressed!");
-      }
     }
   }
 }

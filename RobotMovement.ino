@@ -106,9 +106,9 @@ void loop() {// The loop runs repeatedly from top to bottom after the setup
       } else if (hatXInput < -7500 ) { // <- If joystick moves left
         checkMovement(1);
       } else if (hatYInput > 7500) { // <- If joystick moves up
-        checkMovement(3);
+        //checkMovement(3);
       } else if (hatYInput < -7500) { // <- If joystick moves down
-        checkMovement(4);
+        //checkMovement(4);
       } else if (rightBumper_R1) {
         Serial.println("R1 pressed!");
         checkMovement(3); //                  <- move forward
@@ -121,15 +121,14 @@ void loop() {// The loop runs repeatedly from top to bottom after the setup
         Serial.println("L2 pressed!");
       } else if (hatXInput <= 7500 && hatXInput >= -7500 && hatYInput <= 7500 && hatYInput >= -7500) {
         checkMovement(5); //                  <- Stop robot
-      } else {
-        checkMovement(5); //                  <- Stop robot
-      }
+      } 
 
       if (buttonA) {
         Serial.println("Button A pressed");
       }
       if (buttonB) {
         Serial.println("Button B pressed");
+        checkMovement(5); // Stop robot if instructions above don't work 
       }
       if (buttonX) {
         Serial.println("Button X pressed");

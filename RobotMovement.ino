@@ -1,7 +1,7 @@
 /*
   This template was provided by Nathan Beeten on October 28, 2016
   It has been modified by Gabriel Kuka on 11, 2016
-  Actual version of the code is 2.1 Alpha!
+  Actual version of the code is 2.1.1!
   This code was created and modified in order to control a savage soccer robot.
 */
 

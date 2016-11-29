@@ -110,6 +110,8 @@ void loop() {// The loop runs repeatedly from top to bottom after the setup
       else if (leftTrigger_L2) {
         Serial.println("L2 pressed!");
       } else if (hatXInput <= 7500 && hatXInput >= -7500 && hatYInput <= 7500 && hatYInput >= -7500) {
+        checkMovement(5); 
+      } else {
         checkMovement(5);
       }
 

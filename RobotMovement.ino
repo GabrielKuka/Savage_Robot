@@ -1,7 +1,7 @@
 /*
   This template was provided by Nathan Beeten on October 28, 2016
   It has been modified by Gabriel Kuka on 11, 2016
-  Actual version of the code is 2.1.1!
+  Actual version of the code is 2.1.3!
   This code was created and modified in order to control a savage soccer robot.
 */
 
@@ -11,7 +11,7 @@
 
 USB Usb; //Create Objects for program to use
 XBOXRECV Xbox(&Usb);
-
+// Pwm pin 11 is left for servos!!!!!
 // Motor 1 pins
 uint8_t dirPin1_M1 = 8;
 uint8_t dirPin2_M1 = 7;
@@ -22,9 +22,18 @@ uint8_t dirPin1_M2 = 2;
 uint8_t dirPin2_M2 = 4;
 uint8_t enablePin_M2 = 5;
 
+// Motor 3 pins (the roller)
+uint8_t dirPin1_M3 = 9;
+uint8_t dirPin2_M3 = 10;
+uint8_t enablePin_M3 = 3;
+
 // Motor objects
 DCMOTOR Motor1;
 DCMOTOR Motor2;
+DCMOTOR Motor3;
+
+// Variable that hold the speed of the motor that is used for the roller
+int rollerMotorSpeed = 0;
 
 // Joystick directions
 int16_t hatXInput;
@@ -62,6 +71,7 @@ void setup() {//The setup code initializes the rest of your program
   // Attach motors to pin in the arduino
   Motor1.attach( dirPin1_M1, dirPin2_M1, enablePin_M1 );
   Motor2.attach( dirPin1_M2, dirPin2_M2, enablePin_M2 );
+  Motor3.attach( dirPin1_M3, dirPin2_M3, enablePin_M3 );
 
   Serial.print(F("\r\nXbox Wireless Receiver Library Started"));
 }
@@ -101,18 +111,18 @@ void loop() {// The loop runs repeatedly from top to bottom after the setup
         checkMovement(4);
       } else if (rightBumper_R1) {
         Serial.println("R1 pressed!");
+        checkMovement(3); //                  <- move forward
       } else if (leftBumper_L1) {
         Serial.println("L1 pressed!");
-      }
-      else if (rightTrigger_R2) {
+        checkMovement(4); //                  <- move backward
+      } else if (rightTrigger_R2) {
         Serial.println("R2 pressed!");
-      }
-      else if (leftTrigger_L2) {
+      } else if (leftTrigger_L2) {
         Serial.println("L2 pressed!");
       } else if (hatXInput <= 7500 && hatXInput >= -7500 && hatYInput <= 7500 && hatYInput >= -7500) {
-        checkMovement(5); 
+        checkMovement(5); //                  <- Stop robot
       } else {
-        checkMovement(5);
+        checkMovement(5); //                  <- Stop robot
       }
 
       if (buttonA) {
@@ -123,6 +133,7 @@ void loop() {// The loop runs repeatedly from top to bottom after the setup
       }
       if (buttonX) {
         Serial.println("Button X pressed");
+        setRollerState(); // Start or Stop rotating the roller
       }
       if (buttonY) {
         Serial.println("Button Y pressed");
@@ -171,3 +182,23 @@ void checkMovement(int movement) {
       Motor2.motorBrake();
   }
 }
+void setRollerState() {
+  if (getRollerState()) {
+    rollerMotorSpeed = 150;
+    Motor3.motorRunCCW(rollerMotorSpeed);
+  } else {
+    rollerMotorSpeed = 0;
+    Motor3.motorBrake();
+  }
+
+}
+
+boolean getRollerState() {
+  if (rollerMotorSpeed == 0) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+

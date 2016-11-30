@@ -1,7 +1,7 @@
 /*
   This template was provided by Nathan Beeten on October 28, 2016
   It has been modified by Gabriel Kuka on 11, 2016
-  Actual version of the code is 2.1.3!
+  Actual version of the code is 2.1.4!
   This code was created and modified in order to control a savage soccer robot.
 */
 
@@ -82,8 +82,8 @@ void loop() {// The loop runs repeatedly from top to bottom after the setup
     if (Xbox.Xbox360Connected[xboxPort]) {
 
       // Connects variables to the directions of the joystick of xbox controller
-      hatXInput = Xbox.getAnalogHat(RightHatX, xboxPort);
-      hatYInput = Xbox.getAnalogHat(RightHatY, xboxPort);
+      hatXInput = Xbox.getAnalogHat(LeftHatX, xboxPort);
+      hatYInput = Xbox.getAnalogHat(LeftHatY, xboxPort);
 
       // Connects variables to the specific buttons in the xbox controller
       buttonA = Xbox.getButtonClick(A, xboxPort);
@@ -101,34 +101,49 @@ void loop() {// The loop runs repeatedly from top to bottom after the setup
       sideIntensity = abs(hatXInput);
       fbIntensity = abs(hatYInput);
 
-      if (hatXInput > 7500) { // <- If joystick moves right
+
+      if (hatXInput > 10000 && hatYInput > 7500) {
+        checkMovement(3);
+        checkMovement(2);
+      } else if (hatXInput < -10000 && hatYInput > 7500) {
+        checkMovement(3);
+        checkMovement(1);
+      } else if (hatXInput < -10000 && hatYInput < -7500) {
+        checkMovement(4);
+        checkMovement(1);
+      } else if (hatXInput > 10000 && hatYInput < -7500) {
+        checkMovement(4);
+        checkMovement(2);
+      } else if (hatXInput > 7500) { // <- If joystick moves right
         checkMovement(2);
       } else if (hatXInput < -7500 ) { // <- If joystick moves left
         checkMovement(1);
       } else if (hatYInput > 7500) { // <- If joystick moves up
-        //checkMovement(3);
+        checkMovement(3);
       } else if (hatYInput < -7500) { // <- If joystick moves down
-        //checkMovement(4);
+        checkMovement(4);
       } else if (rightBumper_R1) {
         Serial.println("R1 pressed!");
-        checkMovement(3); //                  <- move forward
+
       } else if (leftBumper_L1) {
         Serial.println("L1 pressed!");
-        checkMovement(4); //                  <- move backward
+
       } else if (rightTrigger_R2) {
         Serial.println("R2 pressed!");
+
       } else if (leftTrigger_L2) {
         Serial.println("L2 pressed!");
-      } else if (hatXInput <= 7500 && hatXInput >= -7500 && hatYInput <= 7500 && hatYInput >= -7500) {
-        checkMovement(5); //                  <- Stop robot
-      } 
+
+      }  else if (hatXInput <= 7500 && hatXInput >= -7500 && hatYInput <= 7500 && hatYInput >= -7500) {
+        //checkMovement(5); //                  <- Stop robot
+      }
 
       if (buttonA) {
         Serial.println("Button A pressed");
       }
       if (buttonB) {
         Serial.println("Button B pressed");
-        checkMovement(5); // Stop robot if instructions above don't work 
+        checkMovement(5); // Stop robot if instructions above don't work
       }
       if (buttonX) {
         Serial.println("Button X pressed");

@@ -170,30 +170,30 @@ void checkMovement(int movement) {
   switch (movement) {
     case 1: // <- Turn robot left
       Serial.println("Turns left");
-      Motor1.motorRunCW(pwmMap(sideIntensity));
       Motor2.motorRunCW(pwmMap(sideIntensity));
+      Motor1.motorRunCW(pwmMap(sideIntensity));
       break;
     case 2: // <- Turn robot right
       Serial.println("Turns right");
-      Motor1.motorRunCCW(pwmMap(sideIntensity));
       Motor2.motorRunCCW(pwmMap(sideIntensity));
+      Motor1.motorRunCCW(pwmMap(sideIntensity));
       break;
 
     case 3: // <- Moves robot forward
       Serial.println("Forward");
-      Motor1.motorRunCCW(pwmMap(fbIntensity));
-      Motor2.motorRunCW(pwmMap(fbIntensity));
+      Motor2.motorRunCCW(pwmMap(fbIntensity));
+      Motor1.motorRunCW(pwmMap(fbIntensity));
       break;
 
     case 4: // Moves robot backward
       Serial.println("Backward");
-      Motor1.motorRunCW(pwmMap(fbIntensity));
-      Motor2.motorRunCCW(pwmMap(fbIntensity));
+      Motor2.motorRunCW(pwmMap(fbIntensity));
+      Motor1.motorRunCCW(pwmMap(fbIntensity));
       break;
     default: // The defualt state will stop the motors from rotating
       Serial.println("Robot stops");
-      Motor1.motorBrake();
       Motor2.motorBrake();
+      Motor1.motorBrake();
   }
 }
 void setRollerState() {

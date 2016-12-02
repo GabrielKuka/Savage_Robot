@@ -1,7 +1,7 @@
 /*
   This template was provided by Nathan Beeten on October 28, 2016
   It has been modified by Gabriel Kuka on 11, 2016
-  Actual version of the code is 2.1.4!
+  Actual version of the code is 2.2!
   This code was created and modified in order to control a savage soccer robot.
 */
 
@@ -51,9 +51,14 @@ int16_t leftBumper_L1;
 int16_t rightTrigger_R2;
 int16_t leftTrigger_L2;
 
-// These variable will hold the intensity of each direction
+// These variables will hold the intensity of left and right joystick direction
 int16_t sideIntensity;
 int16_t fbIntensity;
+
+// These variables will hold the intensity of l2 and r2 buttons
+int8_t r2_Intensity;
+int8_t l2_Intensity;
+
 
 bool motorDir;
 
@@ -94,56 +99,25 @@ void loop() {// The loop runs repeatedly from top to bottom after the setup
       // Connects variables with bumper and trigger buttons at the xbox controller
       rightBumper_R1 = Xbox.getButtonClick(R1, xboxPort);
       leftBumper_L1 = Xbox.getButtonClick(L1, xboxPort);
-      rightTrigger_R2 = Xbox.getButtonClick(R2, xboxPort);
-      leftTrigger_L2 = Xbox.getButtonClick(L2, xboxPort);
+      rightTrigger_R2 = Xbox.getButtonPress(R2, xboxPort);
+      leftTrigger_L2 = Xbox.getButtonPress(L2, xboxPort);
 
       // Assigns the value of the intensity of the right joystick
       sideIntensity = abs(hatXInput);
       fbIntensity = abs(hatYInput);
 
+      // Holds the value that shows how much trigger buttons are pressed
+      r2_Intensity = abs(rightTrigger_R2);
+      l2_Intensity = abs(leftTrigger_L2);
 
-      if (hatXInput > 10000 && hatYInput > 7500) {
-        checkMovement(3);
-        checkMovement(2);
-      } else if (hatXInput < -10000 && hatYInput > 7500) {
-        checkMovement(3);
-        checkMovement(1);
-      } else if (hatXInput < -10000 && hatYInput < -7500) {
-        checkMovement(4);
-        checkMovement(1);
-      } else if (hatXInput > 10000 && hatYInput < -7500) {
-        checkMovement(4);
-        checkMovement(2);
-      } else if (hatXInput > 7500) { // <- If joystick moves right
-        checkMovement(2);
-      } else if (hatXInput < -7500 ) { // <- If joystick moves left
-        checkMovement(1);
-      } else if (hatYInput > 7500) { // <- If joystick moves up
-        checkMovement(3);
-      } else if (hatYInput < -7500) { // <- If joystick moves down
-        checkMovement(4);
-      } else if (rightBumper_R1) {
-        Serial.println("R1 pressed!");
-
-      } else if (leftBumper_L1) {
-        Serial.println("L1 pressed!");
-
-      } else if (rightTrigger_R2) {
-        Serial.println("R2 pressed!");
-
-      } else if (leftTrigger_L2) {
-        Serial.println("L2 pressed!");
-
-      }  else if (hatXInput <= 7500 && hatXInput >= -7500 && hatYInput <= 7500 && hatYInput >= -7500) {
-        //checkMovement(5); //                  <- Stop robot
-      }
+      checkMovement();
 
       if (buttonA) {
         Serial.println("Button A pressed");
       }
       if (buttonB) {
         Serial.println("Button B pressed");
-        checkMovement(5); // Stop robot if instructions above don't work
+        checkBasicMovement(5); // Stop robot if instructions above don't work
       }
       if (buttonX) {
         Serial.println("Button X pressed");
@@ -161,41 +135,96 @@ void loop() {// The loop runs repeatedly from top to bottom after the setup
 uint8_t pwmMap(uint16_t input) {
   uint8_t temp = (input - 1) / 128; //overflows at full neg without the -1
   Serial.print("Intensity: ");
-  Serial.println(input);
-  Serial.print("Pwm Out: ");
-  Serial.println(temp);
+  Serial.print(input);
+  Serial.print("   Pwm Out: ");
+  Serial.print(temp);
+  Serial.print("      ");
   return temp;
 }
-void checkMovement(int movement) {
+
+void checkMovement() {
+  
+  
+  if ( rightTrigger_R2 > 0  &&  hatXInput > 7500 ) {        //  <- If R2 is pressed and joystick moves right
+    checkBasicMovement(3);                                  //  <- Move forward
+    delay(200);                                             //  <- Delay 0.3 seconds from extra current drain
+    checkBasicMovement(2);                                  //  <- Move right~~~
+  } else if ( rightTrigger_R2 > 0  &&  hatXInput < -7500 ) {//  <- If R2 is pressed and joystick moves left
+    checkBasicMovement(3);                                  //  <- Move forward
+    delay(200);                                             //  <- Delay 0.3 seconds from extra current drain
+    checkBasicMovement(1);                                  //  <- Move left~~~
+  } else if ( leftTrigger_L2 > 0  &&  hatXInput > 7500 ) {  //  <- If L2 is pressed and joystick moves right
+    checkBasicMovement(4);                                  //  <- Move backward
+    delay(200);                                             //  <- Delay 0.3 seconds from extra current drain
+    checkBasicMovement(2);                                  //  <- Move right~~~
+  } else if ( leftTrigger_L2 > 0  &&  hatXInput < -7500 ) { //  <- If L2 is pressed and joystick moves left
+    checkBasicMovement(4);                                  //  <- Move backward
+    delay(200);                                             //  <- Delay 0.3 seconds from extra current drain
+    checkBasicMovement(1);                                  //  <- Move left~~~
+  } else if (rightTrigger_R2 > 0) {                         //  <- If R2 is pressed
+    checkBasicMovement(3);                                  //  <- Move forward~~~
+  } else if (leftTrigger_L2 > 0) {                          //  <- If L2 is pressed
+    checkBasicMovement(4);                                  //  <- Move backward~~~
+  } else if (hatXInput > 7500) {                            //  <- If joystick moves right
+    checkBasicMovement(2);                                  //  <- Move right~~~
+  } else if (hatXInput < -7500 ) {                          //  <- If joystick moves left
+    checkBasicMovement(1);                                  //  <- Move left~~~
+  } else if (r2_Intensity == 0 && l2_Intensity == 0) {      //  <- If none of the trigger buttons is pressed
+    checkBasicMovement(5);                                  //  <- Stop robot~~~
+  } else if ( rightTrigger_R2 > 0 && leftTrigger_L2 > 0 ) { //  <- If both of the trigger buttons are pressed at the same time
+    checkBasicMovement(5);                                  //  <- Stop robot~~~
+  }
+}
+
+void checkBasicMovement(int movement) {
   switch (movement) {
+    
     case 1: // <- Turn robot left
-      Serial.println("Turns left");
+    
+      Serial.print("Turns left    ");
       Motor2.motorRunCW(pwmMap(sideIntensity));
       Motor1.motorRunCW(pwmMap(sideIntensity));
+      Serial.println("");
+      
       break;
+      
     case 2: // <- Turn robot right
-      Serial.println("Turns right");
+    
+      Serial.print("Turns right    ");
       Motor2.motorRunCCW(pwmMap(sideIntensity));
       Motor1.motorRunCCW(pwmMap(sideIntensity));
+      Serial.println("");
+      
       break;
 
     case 3: // <- Moves robot forward
-      Serial.println("Forward");
-      Motor2.motorRunCCW(pwmMap(fbIntensity));
-      Motor1.motorRunCW(pwmMap(fbIntensity));
+
+      Serial.print("Forward   ");
+      Serial.print(rightTrigger_R2);
+      Serial.println("");
+
+      Motor2.motorRunCCW(r2_Intensity);
+      Motor1.motorRunCW(r2_Intensity);
+
       break;
 
     case 4: // Moves robot backward
-      Serial.println("Backward");
-      Motor2.motorRunCW(pwmMap(fbIntensity));
-      Motor1.motorRunCCW(pwmMap(fbIntensity));
+
+      Serial.print("Backward   ");
+      Serial.print(leftTrigger_L2);
+      Serial.println("");
+
+      Motor2.motorRunCW(l2_Intensity);
+      Motor1.motorRunCCW(l2_Intensity);
+
       break;
+      
     default: // The defualt state will stop the motors from rotating
-      Serial.println("Robot stops");
       Motor2.motorBrake();
       Motor1.motorBrake();
   }
 }
+
 void setRollerState() {
   if (getRollerState()) {
     rollerMotorSpeed = 150;
@@ -215,4 +244,3 @@ boolean getRollerState() {
     return false;
   }
 }
-

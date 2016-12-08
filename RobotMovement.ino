@@ -8,10 +8,11 @@
 #include <Arduino.h>
 #include <XBOXRECV.h> //import the wireless coms library
 #include <DCMOTOR.h> //import the motor control library
+#include <Servo.h> // import the servo library
 
 USB Usb; //Create Objects for program to use
 XBOXRECV Xbox(&Usb);
-// Pwm pin 11 is left for servos!!!!!
+
 // Motor 1 pins
 uint8_t dirPin1_M1 = 8;
 uint8_t dirPin2_M1 = 7;
@@ -23,14 +24,29 @@ uint8_t dirPin2_M2 = 4;
 uint8_t enablePin_M2 = 5;
 
 // Motor 3 pins (the roller)
-uint8_t dirPin1_M3 = 9;
-uint8_t dirPin2_M3 = 10;
+uint8_t dirPin1_M3 = 11;
+uint8_t dirPin2_M3 = 12;
 uint8_t enablePin_M3 = 3;
 
 // Motor objects
 DCMOTOR Motor1;
 DCMOTOR Motor2;
 DCMOTOR Motor3;
+
+// Servo Objects
+Servo servo1;
+Servo servo2;
+
+// Sensor pins
+int grayScaleSensorPin = 1;
+int flameSensorPin = 2;
+
+// Variables where the values from the sensor will be stored
+int grayScaleSensorVal;
+int flameSensorVal;
+
+// Default position of servos
+int default_position = 0;
 
 // Variable that hold the speed of the motor that is used for the roller
 int rollerMotorSpeed = 0;
@@ -59,6 +75,8 @@ int16_t fbIntensity;
 int8_t r2_Intensity;
 int8_t l2_Intensity;
 
+// Pin where two microservo will the get signal
+int servoSignalPin = A0;
 
 bool motorDir;
 
@@ -73,15 +91,38 @@ void setup() {//The setup code initializes the rest of your program
     while (1); //Stop the program if we didn't connect
   }
 
+  pinMode(grayScaleSensorPin, INPUT);
+  pinMode(flameSensorPin, INPUT);
+  pinMode(servoSignalPin, OUTPUT);
+  pinMode(dirPin1_M1, OUTPUT);
+  pinMode(dirPin2_M1, OUTPUT);
+  pinMode(enablePin_M1, OUTPUT);
+  pinMode(dirPin1_M2, OUTPUT);
+  pinMode(dirPin2_M2, OUTPUT);
+  pinMode(enablePin_M2, OUTPUT);
+  pinMode(dirPin1_M3, OUTPUT);
+  pinMode(dirPin2_M3, OUTPUT);
+  pinMode(enablePin_M3, OUTPUT);
+  
+  
   // Attach motors to pin in the arduino
   Motor1.attach( dirPin1_M1, dirPin2_M1, enablePin_M1 );
   Motor2.attach( dirPin1_M2, dirPin2_M2, enablePin_M2 );
   Motor3.attach( dirPin1_M3, dirPin2_M3, enablePin_M3 );
 
+  // attach both servos to pin 13
+  servo1.attach(servoSignalPin);
+  servo2.attach(servoSignalPin);
+
+  // give servos default positions
+  servo1.write(default_position);
+  servo2.write(default_position);
+
   Serial.print(F("\r\nXbox Wireless Receiver Library Started"));
 }
 
 void loop() {// The loop runs repeatedly from top to bottom after the setup
+  
   Usb.Task();
   if (Xbox.XboxReceiverConnected)  {
     if (Xbox.Xbox360Connected[xboxPort]) {
@@ -110,10 +151,18 @@ void loop() {// The loop runs repeatedly from top to bottom after the setup
       r2_Intensity = abs(rightTrigger_R2);
       l2_Intensity = abs(leftTrigger_L2);
 
+      grayScaleSensorVal = analogRead(grayScaleSensorPin);
+      flameSensorVal = analogRead(flameSensorPin);
+
       checkMovement();
 
       if (buttonA) {
-        Serial.println("Button A pressed");
+        Serial.println("Rotate Microservo");
+        for(int pos = 0; pos <= 130; pos++){
+          servo1.write(pos);
+          servo2.write(pos);
+          delay(50);
+          }
       }
       if (buttonB) {
         Serial.println("Button B pressed");
@@ -124,7 +173,12 @@ void loop() {// The loop runs repeatedly from top to bottom after the setup
         setRollerState(); // Start or Stop rotating the roller
       }
       if (buttonY) {
-        Serial.println("Button Y pressed");
+        Serial.println("Rotate microservo");
+        for(int pos = 130; pos >= 0; pos--){
+          servo1.write(pos);
+          servo2.write(pos);
+          delay(50);
+          }
       }
 
 
@@ -145,23 +199,7 @@ uint8_t pwmMap(uint16_t input) {
 void checkMovement() {
   
   
-  if ( rightTrigger_R2 > 0  &&  hatXInput > 7500 ) {        //  <- If R2 is pressed and joystick moves right
-    checkBasicMovement(3);                                  //  <- Move forward
-    delay(200);                                             //  <- Delay 0.3 seconds from extra current drain
-    checkBasicMovement(2);                                  //  <- Move right~~~
-  } else if ( rightTrigger_R2 > 0  &&  hatXInput < -7500 ) {//  <- If R2 is pressed and joystick moves left
-    checkBasicMovement(3);                                  //  <- Move forward
-    delay(200);                                             //  <- Delay 0.3 seconds from extra current drain
-    checkBasicMovement(1);                                  //  <- Move left~~~
-  } else if ( leftTrigger_L2 > 0  &&  hatXInput > 7500 ) {  //  <- If L2 is pressed and joystick moves right
-    checkBasicMovement(4);                                  //  <- Move backward
-    delay(200);                                             //  <- Delay 0.3 seconds from extra current drain
-    checkBasicMovement(2);                                  //  <- Move right~~~
-  } else if ( leftTrigger_L2 > 0  &&  hatXInput < -7500 ) { //  <- If L2 is pressed and joystick moves left
-    checkBasicMovement(4);                                  //  <- Move backward
-    delay(200);                                             //  <- Delay 0.3 seconds from extra current drain
-    checkBasicMovement(1);                                  //  <- Move left~~~
-  } else if (rightTrigger_R2 > 0) {                         //  <- If R2 is pressed
+  if (rightTrigger_R2 > 0) {                                //  <- If R2 is pressed
     checkBasicMovement(3);                                  //  <- Move forward~~~
   } else if (leftTrigger_L2 > 0) {                          //  <- If L2 is pressed
     checkBasicMovement(4);                                  //  <- Move backward~~~
@@ -227,7 +265,7 @@ void checkBasicMovement(int movement) {
 
 void setRollerState() {
   if (getRollerState()) {
-    rollerMotorSpeed = 150;
+    rollerMotorSpeed = 255;
     Motor3.motorRunCCW(rollerMotorSpeed);
   } else {
     rollerMotorSpeed = 0;

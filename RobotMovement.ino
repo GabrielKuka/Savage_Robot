@@ -1,7 +1,7 @@
 /*
   This template was provided by Nathan Beeten on October 28, 2016
   It has been modified by Gabriel Kuka on 11, 2016
-  Actual version of the code is 2.2!
+  Actual version of the code is 3.0!
   This code was created and modified in order to control a savage soccer robot.
 */
 
@@ -33,18 +33,6 @@ DCMOTOR Motor1;
 DCMOTOR Motor2;
 DCMOTOR Motor3;
 
-// Servo Objects
-Servo servo1;
-Servo servo2;
-
-// Sensor pins
-int grayScaleSensorPin = 1;
-int flameSensorPin = 2;
-
-// Variables where the values from the sensor will be stored
-int grayScaleSensorVal;
-int flameSensorVal;
-
 // Default position of servos
 int default_position = 0;
 
@@ -75,44 +63,49 @@ int16_t fbIntensity;
 int8_t r2_Intensity;
 int8_t l2_Intensity;
 
-// Pin where two microservo will the get signal
-int servoSignalPin = A0;
+// Boolean variables
+bool motorDir;              // <- The direction of the motor
+bool servoTempPosition;     // <- Temporary position of the serovs
+bool motorState;            // <- The state of the motor (autonomous or remote controlled)
 
-bool motorDir;
+// Servo Objects
+Servo servo1;
+Servo servo2;
+
+// Sensor pins
+int grayScaleSensorPin = A3;
+int flameSensorPin = A2;
+
+// Variables where the values from the sensor will be stored
+int grayScaleSensorVal;
+int flameSensorVal;
+
 
 uint8_t pwmMap(uint16_t input);
 
-uint8_t xboxPort = 0;//The port on the receiver that the controller is connected to
+uint8_t xboxPort = 0;  // <- The port on the receiver that the controller is connected to
 
-void setup() {//The setup code initializes the rest of your program
+void setup() {    
+        
   Serial.begin(115200);
-  if (Usb.Init() == -1) {//check whether the USB connects
+  if (Usb.Init() == -1) {                       // <- check whether the USB connects
     Serial.print(F("\r\nOSC did not start"));
-    while (1); //Stop the program if we didn't connect
+    while (1);                                  // <- Stop the program if we didn't connect
   }
 
-  pinMode(grayScaleSensorPin, INPUT);
-  pinMode(flameSensorPin, INPUT);
-  pinMode(servoSignalPin, OUTPUT);
-  pinMode(dirPin1_M1, OUTPUT);
-  pinMode(dirPin2_M1, OUTPUT);
-  pinMode(enablePin_M1, OUTPUT);
-  pinMode(dirPin1_M2, OUTPUT);
-  pinMode(dirPin2_M2, OUTPUT);
-  pinMode(enablePin_M2, OUTPUT);
-  pinMode(dirPin1_M3, OUTPUT);
-  pinMode(dirPin2_M3, OUTPUT);
-  pinMode(enablePin_M3, OUTPUT);
-  
-  
+
   // Attach motors to pin in the arduino
   Motor1.attach( dirPin1_M1, dirPin2_M1, enablePin_M1 );
   Motor2.attach( dirPin1_M2, dirPin2_M2, enablePin_M2 );
   Motor3.attach( dirPin1_M3, dirPin2_M3, enablePin_M3 );
 
-  // attach both servos to pin 13
-  servo1.attach(servoSignalPin);
-  servo2.attach(servoSignalPin);
+  // Attach both servos to pin A0 (analog and it works!)
+  servo1.attach(A0);
+  servo2.attach(A0);
+
+  // Initialize booleans
+  servoTempPosition = false;                        // <- The microservos are at the initial state
+  motorState = false;                               // <- The microservos are at 130 degrees
 
   // give servos default positions
   servo1.write(default_position);
@@ -121,8 +114,8 @@ void setup() {//The setup code initializes the rest of your program
   Serial.print(F("\r\nXbox Wireless Receiver Library Started"));
 }
 
-void loop() {// The loop runs repeatedly from top to bottom after the setup
-  
+void loop() {
+
   Usb.Task();
   if (Xbox.XboxReceiverConnected)  {
     if (Xbox.Xbox360Connected[xboxPort]) {
@@ -151,34 +144,51 @@ void loop() {// The loop runs repeatedly from top to bottom after the setup
       r2_Intensity = abs(rightTrigger_R2);
       l2_Intensity = abs(leftTrigger_L2);
 
-      grayScaleSensorVal = analogRead(grayScaleSensorPin);
-      flameSensorVal = analogRead(flameSensorPin);
+      // Receive the values from the sensors and map the values to a specific range
+      grayScaleSensorVal = map(analogRead(grayScaleSensorPin), 0, 1024, 0, 50);
+      flameSensorVal = map(analogRead(flameSensorPin), 0, 1024, 0, 9);
 
-      checkMovement();
+      if (!motorState) {
+        checkMovement();
+      } else {
+        runIndependent();
+      }
 
-      if (buttonA) {
+      if (buttonA && !motorState) {
         Serial.println("Rotate Microservo");
-        for(int pos = 0; pos <= 130; pos++){
-          servo1.write(pos);
-          servo2.write(pos);
-          delay(50);
+        if (!servoTempPosition) {
+          servoTempPosition = true;
+          for (int pos = 0; pos <= 130; pos++) {
+            servo1.write(pos);
+            servo2.write(pos);
+            delay(25);
           }
+        }
       }
       if (buttonB) {
-        Serial.println("Button B pressed");
-        checkBasicMovement(5); // Stop robot if instructions above don't work
+        if (motorState) {
+          motorState = false;
+          Serial.println("Autonumous: false");
+        }
+        else {
+          motorState = true;
+          Serial.println("Autonumous: true");
+        }
       }
-      if (buttonX) {
-        Serial.println("Button X pressed");
+      if (buttonX && !motorState) {
+
         setRollerState(); // Start or Stop rotating the roller
       }
-      if (buttonY) {
+      if (buttonY && !motorState) {
         Serial.println("Rotate microservo");
-        for(int pos = 130; pos >= 0; pos--){
-          servo1.write(pos);
-          servo2.write(pos);
-          delay(50);
+        if (servoTempPosition) {
+          servoTempPosition = false;
+          for (int pos = 130; pos >= 0; pos--) {
+            servo1.write(pos);
+            servo2.write(pos);
+            delay(25);
           }
+        }
       }
 
 
@@ -197,8 +207,8 @@ uint8_t pwmMap(uint16_t input) {
 }
 
 void checkMovement() {
-  
-  
+
+
   if (rightTrigger_R2 > 0) {                                //  <- If R2 is pressed
     checkBasicMovement(3);                                  //  <- Move forward~~~
   } else if (leftTrigger_L2 > 0) {                          //  <- If L2 is pressed
@@ -216,23 +226,23 @@ void checkMovement() {
 
 void checkBasicMovement(int movement) {
   switch (movement) {
-    
+
     case 1: // <- Turn robot left
-    
+
       Serial.print("Turns left    ");
       Motor2.motorRunCW(pwmMap(sideIntensity));
       Motor1.motorRunCW(pwmMap(sideIntensity));
       Serial.println("");
-      
+
       break;
-      
+
     case 2: // <- Turn robot right
-    
+
       Serial.print("Turns right    ");
       Motor2.motorRunCCW(pwmMap(sideIntensity));
       Motor1.motorRunCCW(pwmMap(sideIntensity));
       Serial.println("");
-      
+
       break;
 
     case 3: // <- Moves robot forward
@@ -256,7 +266,7 @@ void checkBasicMovement(int movement) {
       Motor1.motorRunCCW(l2_Intensity);
 
       break;
-      
+
     default: // The defualt state will stop the motors from rotating
       Motor2.motorBrake();
       Motor1.motorBrake();
@@ -266,9 +276,11 @@ void checkBasicMovement(int movement) {
 void setRollerState() {
   if (getRollerState()) {
     rollerMotorSpeed = 255;
+    Serial.println("Start the roller");
     Motor3.motorRunCCW(rollerMotorSpeed);
   } else {
     rollerMotorSpeed = 0;
+    Serial.println("Stop the roller");
     Motor3.motorBrake();
   }
 
@@ -281,4 +293,30 @@ boolean getRollerState() {
   else {
     return false;
   }
+}
+
+void runIndependent() {
+
+  if (flameSensorVal >= 4) {
+    Serial.print("FlameSensor:  ");
+    Serial.print(flameSensorVal);
+    Serial.print("  Move Forward  ");
+  } else if (flameSensorVal <= 3) {
+    Serial.print("FlameSensor:  ");
+    Serial.print(flameSensorVal);
+    Serial.print("  Turn Right    ");
+  }
+
+  if (grayScaleSensorVal > 14) {
+    Serial.print("GrayScaleSensor:  ");
+    Serial.print(grayScaleSensorVal);
+    Serial.println("  Turn left ");
+  } else {
+    Serial.print("GrayscaleSensor:  ");
+    Serial.print(grayScaleSensorVal);
+    Serial.println("  Move Forward");
+  }
+
+  delay(500);
+  
 }

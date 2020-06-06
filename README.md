@@ -1,6 +1,6 @@
 #**GE3**
 
-###This project was done in cooperation with my team: GE3
+###This project is group work of 4.
 ####Together we competed with our product in the savage soccer competition :D
 
 __Team Members__
